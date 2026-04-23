@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values
+
+project_name = "salesai"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# Database
+db_username = "salesai_admin"
+db_password = "CHANGE_ME_STRONG_PASSWORD"
+
+# API Keys (keep these secret!)
+openai_api_key     = "sk-your-openai-api-key"
+telegram_bot_token = "your-telegram-bot-token-from-botfather"
+secret_key         = "your-secret-key-for-jwt-tokens"
+
+# Optional: Custom domain for frontend
+frontend_domain = ""
+
+# Optional: Adjust database instance size
+db_instance_class     = "db.t3.micro"
+db_allocated_storage  = 20

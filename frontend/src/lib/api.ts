@@ -1,0 +1,178 @@
+import axios from 'axios';
+import type {
+  User,
+  Product,
+  DiscountRule,
+  Order,
+  LoginCredentials,
+  RegisterData,
+  AuthResponse,
+} from '@/types';
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth
+export const auth = {
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+    const formData = new FormData();
+    formData.append('username', credentials.username);
+    formData.append('password', credentials.password);
+    
+    const { data } = await api.post<AuthResponse>('/auth/login', formData, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+    return data;
+  },
+  
+  register: async (userData: RegisterData): Promise<User> => {
+    const { data } = await api.post<User>('/auth/register', userData);
+    return data;
+  },
+  
+  getCurrentUser: async (): Promise<User> => {
+    const { data } = await api.get<User>('/auth/me');
+    return data;
+  },
+};
+
+// Products
+export const products = {
+  getAll: async (): Promise<Product[]> => {
+    const { data } = await api.get<Product[]>('/products');
+    return data;
+  },
+  
+  getById: async (id: number): Promise<Product> => {
+    const { data } = await api.get<Product>(`/products/${id}`);
+    return data;
+  },
+  
+  create: async (productData: Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Product> => {
+    const { data } = await api.post<Product>('/products', productData);
+    return data;
+  },
+  
+  update: async (id: number, productData: Partial<Product>): Promise<Product> => {
+    const { data } = await api.put<Product>(`/products/${id}`, productData);
+    return data;
+  },
+  
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/products/${id}`);
+  },
+};
+
+// Discounts
+export const discounts = {
+  getByProduct: async (productId: number): Promise<DiscountRule[]> => {
+    const { data } = await api.get<DiscountRule[]>(`/discounts/product/${productId}`);
+    return data;
+  },
+  
+  create: async (ruleData: Omit<DiscountRule, 'id' | 'created_at' | 'updated_at'>): Promise<DiscountRule> => {
+    const { data } = await api.post<DiscountRule>('/discounts', ruleData);
+    return data;
+  },
+  
+  update: async (id: number, ruleData: Partial<DiscountRule>): Promise<DiscountRule> => {
+    const { data } = await api.put<DiscountRule>(`/discounts/${id}`, ruleData);
+    return data;
+  },
+  
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/discounts/${id}`);
+  },
+};
+
+// Orders
+export const orders = {
+  getAll: async (status?: string): Promise<Order[]> => {
+    const { data } = await api.get<Order[]>('/orders', {
+      params: { status },
+    });
+    return data;
+  },
+  
+  getById: async (id: number): Promise<Order> => {
+    const { data } = await api.get<Order>(`/orders/${id}`);
+    return data;
+  },
+  
+  updateStatus: async (id: number, newStatus: string): Promise<void> => {
+    await api.patch(`/orders/${id}/status`, null, {
+      params: { new_status: newStatus },
+    });
+  },
+};
+
+// Telegram
+export const telegram = {
+  updateBotToken: async (botToken: string, botUsername?: string): Promise<void> => {
+    await api.post('/telegram/update-bot-token', null, {
+      params: { bot_token: botToken, bot_username: botUsername },
+    });
+  },
+  
+  setWebhook: async (webhookUrl: string): Promise<void> => {
+    await api.post('/telegram/set-webhook', null, {
+      params: { webhook_url: webhookUrl },
+    });
+  },
+};
+
+// Uploads
+export const uploads = {
+  getPresignedUrl: async (filename: string, contentType: string): Promise<{
+    presigned_url: string;
+    public_url: string;
+    s3_key: string;
+  }> => {
+    const { data } = await api.post('/uploads/presigned-url', null, {
+      params: { filename, content_type: contentType },
+    });
+    return data;
+  },
+  
+  uploadFile: async (file: File): Promise<string> => {
+    const { presigned_url, public_url } = await uploads.getPresignedUrl(
+      file.name,
+      file.type
+    );
+    
+    await axios.put(presigned_url, file, {
+      headers: { 'Content-Type': file.type },
+    });
+    
+    return public_url;
+  },
+};
+
+export default api;
