@@ -123,16 +123,33 @@ aws s3 mb s3://salesai-terraform-state
 
 Update `terraform/main.tf` with your bucket name.
 
-### 4. Set Up Clerk Authentication
+### 4. Configure Environment Variables
 
-Before deploying, you need to set up Clerk:
+A `.env` file has been created in the root folder with all required variables:
+
+```bash
+# The .env file contains placeholders for all variables
+# Follow the setup guide to fill in the values
+```
+
+**📖 See [.env.setup.md](.env.setup.md) for detailed instructions on getting each value**
+
+Quick checklist:
+- [ ] AWS credentials (Access Key ID and Secret)
+- [ ] Database password
+- [ ] Clerk API keys (Domain, Secret, Publishable)
+- [ ] OpenAI API key
+- [ ] Telegram bot token
+
+### 5. Set Up Clerk Authentication
 
 1. Create a free account at [clerk.com](https://clerk.com)
 2. Create a new application
 3. Get your API keys from the dashboard
-4. Follow the detailed setup guide: **[CLERK_SETUP.md](CLERK_SETUP.md)**
+4. Add them to `.env` file
+5. Follow the detailed setup guide: **[CLERK_SETUP.md](CLERK_SETUP.md)**
 
-### 5. Configure Terraform Variables
+### 6. Configure Terraform Variables
 
 ```bash
 cd terraform
@@ -156,7 +173,7 @@ clerk_secret_key       = "sk_test_your-clerk-secret-key"
 clerk_publishable_key  = "pk_test_your-clerk-publishable-key"
 ```
 
-### 6. Deploy Infrastructure
+### 7. Deploy Infrastructure
 
 ```bash
 cd terraform
@@ -170,7 +187,7 @@ Note the outputs:
 - `frontend_url` - CloudFront URL for the dashboard
 - `telegram_webhook_url` - Webhook URL for Telegram
 
-### 7. Set Up GitHub Secrets
+### 8. Set Up GitHub Secrets
 
 Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 
@@ -189,7 +206,7 @@ CLOUDFRONT_DISTRIBUTION_ID
 CLOUDFRONT_DOMAIN
 ```
 
-### 8. Automated Deployment (Recommended)
+### 9. Automated Deployment (Recommended)
 
 **The project includes a unified deployment workflow that handles everything automatically in the correct order:**
 
@@ -221,7 +238,7 @@ GitHub Actions will automatically:
 
 📖 **See [.github/workflows/README.md](.github/workflows/README.md) for detailed deployment options**
 
-### 9. Manual Deployment (Optional)
+### 10. Manual Deployment (Optional)
 
 If you prefer manual deployment:
 
@@ -395,6 +412,7 @@ salesai/
 
 ### Getting Started
 - **[QUICKSTART.md](QUICKSTART.md)** - Deploy in 30 minutes (start here!)
+- **[.env.setup.md](.env.setup.md)** - Environment variables setup guide
 - **[README.md](README.md)** - Main documentation (you're here!)
 
 ### Deployment

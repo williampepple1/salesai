@@ -21,7 +21,12 @@ Get your AI Sales Helper running in production in under 30 minutes.
    - Secret Key: `sk_test_...`
    - Domain: `your-app.clerk.accounts.dev`
 
-### 3️⃣ Configure Repository (5 minutes)
+### 3️⃣ Configure Environment Variables (5 minutes)
+
+**Set up `.env` file** (optional for local development):
+- A `.env` file has been created in the root folder
+- See [.env.setup.md](.env.setup.md) for detailed instructions
+- Fill in the values as you get them from the steps below
 
 **Add GitHub Secrets** (Settings → Secrets → Actions):
 
