@@ -8,11 +8,11 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
+    clerk_user_id = Column(String, unique=True, index=True, nullable=False)  # Clerk user ID
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
-    business_name = Column(String)
+    full_name = Column(String, nullable=True)
+    business_name = Column(String, nullable=True)
     telegram_bot_token = Column(String, unique=True, nullable=True)
     telegram_bot_username = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)

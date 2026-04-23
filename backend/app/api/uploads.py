@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 import uuid
 from ..database import get_db
 from ..models import User
-from ..auth import get_current_active_user
+from ..clerk_auth import get_current_active_user
 from ..config import settings
 
 router = APIRouter()

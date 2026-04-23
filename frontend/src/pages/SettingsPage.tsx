@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useMutation } from '@tanstack/react-query';
-import { Bot, CheckCircle } from 'lucide-react';
-import { telegram } from '@/lib/api';
-import { useAuthStore } from '@/store/authStore';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Bot, CheckCircle, User as UserIcon } from 'lucide-react';
+import { UserProfile } from '@clerk/clerk-react';
+import { telegram, auth } from '@/lib/api';
 
 export default function SettingsPage() {
-  const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: auth.getCurrentUser,
+  });
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
@@ -39,25 +44,23 @@ export default function SettingsPage() {
     <div className="max-w-4xl">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
       
-      {/* Account Information */}
+      {/* Clerk User Profile */}
       <div className="card p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Username</p>
-            <p className="text-base font-medium text-gray-900">{user?.username}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="text-base font-medium text-gray-900">{user?.email}</p>
-          </div>
-          {user?.business_name && (
-            <div>
-              <p className="text-sm text-gray-500">Business Name</p>
-              <p className="text-base font-medium text-gray-900">{user.business_name}</p>
-            </div>
-          )}
+        <div className="flex items-center mb-4">
+          <UserIcon className="w-6 h-6 text-primary-600 mr-2" />
+          <h2 className="text-xl font-semibold text-gray-900">Account & Security</h2>
         </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Manage your account details, email, password, and security settings.
+        </p>
+        <UserProfile 
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              card: "shadow-none border-0"
+            }
+          }}
+        />
       </div>
       
       {/* Telegram Bot Configuration */}

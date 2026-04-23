@@ -3,21 +3,9 @@ from typing import Optional
 from datetime import datetime
 
 
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-    full_name: Optional[str] = None
-    business_name: Optional[str] = None
-
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-
 class UserResponse(BaseModel):
     id: int
+    clerk_user_id: str
     email: str
     username: str
     full_name: Optional[str]
@@ -30,10 +18,10 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class UserUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    business_name: Optional[str] = None
 
 
 class TokenData(BaseModel):
-    user_id: Optional[int] = None
+    clerk_user_id: Optional[str] = None

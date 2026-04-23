@@ -1,0 +1,60 @@
+name: Deploy Backend
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  AWS_REGION: us-east-1
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  deploy:
+    name: Build and Deploy Lambda
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        working-directory: backend
+        run: |
+          pytest tests/ -v
+      
+      - name: Build Lambda package
+        working-directory: backend
+        run: |
+          mkdir -p lambda-package
+          pip install -r requirements.txt -t lambda-package/ --platform manylinux2014_x86_64 --only-binary=:all:
+          cp -r app lambda-package/
+          cp lambda_handler.py lambda-package/
+          cd lambda-package
+          zip -r ../lambda-package.zip .
+          cd ..
+      
+      - name: Update Lambda function
+        working-directory: backend
+        run: |
+          aws lambda update-function-code \
+            --function-name salesai-api \
+            --zip-file fileb://lambda-package.zip \
+            --region ${{ env.AWS_REGION }}

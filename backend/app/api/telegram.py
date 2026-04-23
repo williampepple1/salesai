@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import User
-from ..auth import get_current_active_user
+from ..clerk_auth import get_current_active_user
 from ..services.telegram_bot import TelegramBotService
 
 router = APIRouter()

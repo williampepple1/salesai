@@ -2,10 +2,19 @@
 
 A complete AI-powered sales assistant platform that enables sellers to manage products through a dashboard and automatically handle customer conversations via Telegram when offline. The AI agent can show products, calculate discounts, and process orders autonomously.
 
+## 🎯 Quick Links
+
+- **⚡ Deploy in 30 minutes**: [QUICKSTART.md](QUICKSTART.md)
+- **📊 Project Overview**: [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)
+- **🚀 Automated Deployment**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- **🔐 Clerk Auth Setup**: [CLERK_SETUP.md](CLERK_SETUP.md)
+- **🤖 AI Agent Guide**: [AI_AGENT_GUIDE.md](AI_AGENT_GUIDE.md)
+
 ## Features
 
+- **Clerk Authentication**: Production-ready auth with email, social logins, 2FA, and user management
 - **React Dashboard**: Product management, discount configuration, order tracking, and Telegram bot integration
-- **AI Sales Agent**: OpenAI GPT-4 powered conversational agent for customer interactions
+- **AI Sales Agent**: OpenAI GPT-4 powered conversational agent for customer interactions (with strict product-only guardrails)
 - **Telegram Bot**: Seamless integration with Telegram for customer communication
 - **Smart Discounts**: Flexible discount rules (percentage, fixed amount, buy X get Y free)
 - **Image Management**: Direct S3 uploads for product images
@@ -56,13 +65,14 @@ A complete AI-powered sales assistant platform that enables sellers to manage pr
 - **Vite** for fast builds
 - **TailwindCSS** for styling
 - **React Query** for data fetching
-- **Zustand** for state management
 - **React Router** for navigation
+- **Clerk** for authentication
 
 ### Backend
 - **Python 3.11** with FastAPI
 - **SQLAlchemy** for ORM
 - **PostgreSQL** for database
+- **Clerk** for authentication & user management
 - **OpenAI API** for AI agent
 - **Telegram Bot API** for messaging
 - **Mangum** for Lambda integration
@@ -84,6 +94,7 @@ A complete AI-powered sales assistant platform that enables sellers to manage pr
 - Node.js 18+
 - Python 3.11+
 - Terraform 1.6+
+- **Clerk account** (free tier available)
 - OpenAI API key
 - Telegram bot token (from @BotFather)
 
@@ -112,7 +123,16 @@ aws s3 mb s3://salesai-terraform-state
 
 Update `terraform/main.tf` with your bucket name.
 
-### 4. Configure Terraform Variables
+### 4. Set Up Clerk Authentication
+
+Before deploying, you need to set up Clerk:
+
+1. Create a free account at [clerk.com](https://clerk.com)
+2. Create a new application
+3. Get your API keys from the dashboard
+4. Follow the detailed setup guide: **[CLERK_SETUP.md](CLERK_SETUP.md)**
+
+### 5. Configure Terraform Variables
 
 ```bash
 cd terraform
@@ -129,12 +149,14 @@ aws_region   = "us-east-1"
 db_username = "salesai_admin"
 db_password = "YOUR_SECURE_PASSWORD"
 
-openai_api_key     = "sk-your-openai-api-key"
-telegram_bot_token = "your-telegram-bot-token"
-secret_key         = "your-jwt-secret-key"
+openai_api_key         = "sk-your-openai-api-key"
+telegram_bot_token     = "your-telegram-bot-token"
+clerk_domain           = "your-app.clerk.accounts.dev"
+clerk_secret_key       = "sk_test_your-clerk-secret-key"
+clerk_publishable_key  = "pk_test_your-clerk-publishable-key"
 ```
 
-### 5. Deploy Infrastructure
+### 6. Deploy Infrastructure
 
 ```bash
 cd terraform
@@ -148,9 +170,9 @@ Note the outputs:
 - `frontend_url` - CloudFront URL for the dashboard
 - `telegram_webhook_url` - Webhook URL for Telegram
 
-### 6. Set Up GitHub Secrets
+### 7. Set Up GitHub Secrets
 
-Add these secrets to your GitHub repository:
+Add these secrets to your GitHub repository (Settings → Secrets → Actions):
 
 ```
 AWS_ACCESS_KEY_ID
@@ -158,13 +180,52 @@ AWS_SECRET_ACCESS_KEY
 DB_PASSWORD
 OPENAI_API_KEY
 TELEGRAM_BOT_TOKEN
-SECRET_KEY
+CLERK_DOMAIN
+CLERK_SECRET_KEY
+CLERK_PUBLISHABLE_KEY
 API_URL (your API Gateway URL)
 S3_FRONTEND_BUCKET
 CLOUDFRONT_DISTRIBUTION_ID
+CLOUDFRONT_DOMAIN
 ```
 
-### 7. Deploy Backend
+### 8. Automated Deployment (Recommended)
+
+**The project includes a unified deployment workflow that handles everything automatically in the correct order:**
+
+```
+1. Infrastructure (Terraform) → 2. Backend (Lambda) → 3. Frontend (S3) → 4. Verification
+```
+
+**To deploy everything:**
+
+```bash
+git add .
+git commit -m "Initial deployment"
+git push origin main
+```
+
+GitHub Actions will automatically:
+- Deploy infrastructure with Terraform
+- Build and deploy backend to Lambda
+- Build and deploy frontend to S3
+- Invalidate CloudFront cache
+- Run health checks
+
+**Or deploy via GitHub UI:**
+1. Go to Actions tab
+2. Select "Complete Deployment"
+3. Click "Run workflow"
+4. Choose which components to deploy (or deploy all)
+5. Monitor progress in real-time
+
+📖 **See [.github/workflows/README.md](.github/workflows/README.md) for detailed deployment options**
+
+### 9. Manual Deployment (Optional)
+
+If you prefer manual deployment:
+
+#### Deploy Backend
 
 The backend will be automatically deployed via GitHub Actions when you push to main, or deploy manually:
 
@@ -188,7 +249,7 @@ cd ../terraform
 terraform apply -target=aws_lambda_function.api
 ```
 
-### 8. Deploy Frontend
+#### Deploy Frontend
 
 ```bash
 cd frontend
@@ -204,7 +265,7 @@ npm run build
 aws s3 sync dist/ s3://your-frontend-bucket/ --delete
 ```
 
-### 9. Configure Telegram Bot
+### 10. Configure Telegram Bot
 
 1. Open Telegram and search for @BotFather
 2. Send `/newbot` and follow instructions
@@ -214,7 +275,7 @@ aws s3 sync dist/ s3://your-frontend-bucket/ --delete
 6. Paste your bot token and save
 7. The webhook will be automatically configured
 
-### 10. Test the System
+### 11. Test the System
 
 1. Add products in the dashboard
 2. Configure discount rules
@@ -322,12 +383,48 @@ salesai/
 │   └── cloudfront.tf         # CloudFront distribution
 └── .github/
     └── workflows/            # CI/CD pipelines
-        ├── backend-deploy.yml
-        ├── frontend-deploy.yml
-        └── terraform.yml
+        ├── deploy.yml        # Main deployment workflow (use this!)
+        ├── README.md         # Deployment documentation
+        └── modules/          # Individual workflow components
+            ├── terraform.yml
+            ├── backend-deploy.yml
+            └── frontend-deploy.yml
 ```
 
+## Documentation
+
+### Getting Started
+- **[QUICKSTART.md](QUICKSTART.md)** - Deploy in 30 minutes (start here!)
+- **[README.md](README.md)** - Main documentation (you're here!)
+
+### Deployment
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Automated deployment guide
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Detailed manual deployment instructions  
+- **[.github/workflows/README.md](.github/workflows/README.md)** - GitHub Actions workflows
+
+### Authentication & Security
+- **[CLERK_SETUP.md](CLERK_SETUP.md)** - Clerk authentication setup
+- **[AUTHENTICATION.md](AUTHENTICATION.md)** - Auth architecture details
+
+### Features & Guides
+- **[AI_AGENT_GUIDE.md](AI_AGENT_GUIDE.md)** - AI agent behavior & guardrails
+
+### Contributing
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contributing guidelines
+
 ## Key Components
+
+### Authentication (Clerk)
+
+This application uses Clerk for authentication, providing:
+- **Multiple sign-in methods**: Email, Google, GitHub, and more
+- **User management dashboard**: View and manage users
+- **Security features**: 2FA, session management, brute force protection
+- **No password storage**: Secure authentication without storing passwords
+- **Automatic user creation**: Users created in database on first login
+
+📖 **For setup instructions, see [CLERK_SETUP.md](CLERK_SETUP.md)**
+📖 **For architecture details, see [AUTHENTICATION.md](AUTHENTICATION.md)**
 
 ### AI Agent Boundaries
 
@@ -411,7 +508,9 @@ The bot operates via webhooks (no polling) for optimal performance in Lambda. It
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 AWS_REGION=us-east-1
 S3_BUCKET_IMAGES=salesai-product-images
-SECRET_KEY=your-secret-key
+CLERK_DOMAIN=your-app.clerk.accounts.dev
+CLERK_SECRET_KEY=sk_test_your-key
+CLERK_PUBLISHABLE_KEY=pk_test_your-key
 OPENAI_API_KEY=sk-your-openai-key
 TELEGRAM_BOT_TOKEN=your-bot-token
 TELEGRAM_WEBHOOK_URL=https://your-api-url/api/telegram/webhook
@@ -421,6 +520,7 @@ TELEGRAM_WEBHOOK_URL=https://your-api-url/api/telegram/webhook
 
 ```
 VITE_API_URL=https://your-api-gateway-url.amazonaws.com/api
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your-key
 ```
 
 ## Security Considerations

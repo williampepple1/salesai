@@ -4,9 +4,6 @@ import type {
   Product,
   DiscountRule,
   Order,
-  LoginCredentials,
-  RegisterData,
-  AuthResponse,
 } from '@/types';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -18,11 +15,24 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+let getTokenFunction: (() => Promise<string | null>) | null = null;
+
+// Set token getter function (called from App.tsx with Clerk's getToken)
+export const setTokenGetter = (fn: () => Promise<string | null>) => {
+  getTokenFunction = fn;
+};
+
+// Request interceptor to add Clerk auth token
+api.interceptors.request.use(async (config) => {
+  if (getTokenFunction) {
+    try {
+      const token = await getTokenFunction();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+    }
   }
   return config;
 });
@@ -32,8 +42,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Clerk handles authentication, just show error
+      console.error('Authentication error:', error);
     }
     return Promise.reject(error);
   }
@@ -41,24 +51,13 @@ api.interceptors.response.use(
 
 // Auth
 export const auth = {
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const formData = new FormData();
-    formData.append('username', credentials.username);
-    formData.append('password', credentials.password);
-    
-    const { data } = await api.post<AuthResponse>('/auth/login', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    });
-    return data;
-  },
-  
-  register: async (userData: RegisterData): Promise<User> => {
-    const { data } = await api.post<User>('/auth/register', userData);
-    return data;
-  },
-  
   getCurrentUser: async (): Promise<User> => {
     const { data } = await api.get<User>('/auth/me');
+    return data;
+  },
+  
+  updateUser: async (userData: Partial<User>): Promise<User> => {
+    const { data } = await api.patch<User>('/auth/me', userData);
     return data;
   },
 };

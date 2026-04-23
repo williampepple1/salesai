@@ -1,6 +1,8 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
+import { useQuery } from '@tanstack/react-query';
+import { auth } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -12,12 +14,18 @@ const navigation = [
 
 export default function DashboardLayout() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
+  
+  // Fetch our app's user data
+  const { data: appUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: auth.getCurrentUser,
+    enabled: !!clerkUser,
+  });
   
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    signOut();
   };
   
   return (
@@ -32,8 +40,25 @@ export default function DashboardLayout() {
           
           {/* User info */}
           <div className="p-4 border-b border-gray-200">
-            <p className="text-sm font-medium text-gray-900">{user?.business_name || user?.username}</p>
-            <p className="text-xs text-gray-500">{user?.email}</p>
+            <div className="flex items-center gap-3">
+              {clerkUser?.imageUrl ? (
+                <img 
+                  src={clerkUser.imageUrl} 
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                  <UserIcon className="w-6 h-6 text-primary-600" />
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {appUser?.business_name || clerkUser?.username || appUser?.username}
+                </p>
+                <p className="text-xs text-gray-500">{clerkUser?.primaryEmailAddress?.emailAddress}</p>
+              </div>
+            </div>
           </div>
           
           {/* Navigation */}

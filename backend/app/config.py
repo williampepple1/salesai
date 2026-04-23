@@ -12,10 +12,11 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-1"
     S3_BUCKET_IMAGES: str
     
-    # Security
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # Clerk Authentication
+    CLERK_DOMAIN: str  # e.g., "your-app.clerk.accounts.dev"
+    CLERK_SECRET_KEY: str
+    CLERK_PUBLISHABLE_KEY: str
+    CLERK_AUDIENCE: Optional[str] = None  # Optional: for custom JWT claims
     
     # OpenAI
     OPENAI_API_KEY: str

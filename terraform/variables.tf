@@ -41,10 +41,20 @@ variable "telegram_bot_token" {
   default     = ""
 }
 
-variable "secret_key" {
-  description = "Secret key for JWT tokens"
+variable "clerk_domain" {
+  description = "Clerk domain (e.g., your-app.clerk.accounts.dev)"
+  type        = string
+}
+
+variable "clerk_secret_key" {
+  description = "Clerk secret key"
   type        = string
   sensitive   = true
+}
+
+variable "clerk_publishable_key" {
+  description = "Clerk publishable key"
+  type        = string
 }
 
 variable "frontend_domain" {

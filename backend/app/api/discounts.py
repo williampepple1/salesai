@@ -4,7 +4,7 @@ from typing import List
 from ..database import get_db
 from ..models import User, Product, DiscountRule
 from ..schemas.discount_rule import DiscountRuleCreate, DiscountRuleUpdate, DiscountRuleResponse
-from ..auth import get_current_active_user
+from ..clerk_auth import get_current_active_user
 
 router = APIRouter()
 

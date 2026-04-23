@@ -81,9 +81,11 @@ resource "aws_secretsmanager_secret" "app_secrets" {
 resource "aws_secretsmanager_secret_version" "app_secrets" {
   secret_id = aws_secretsmanager_secret.app_secrets.id
   secret_string = jsonencode({
-    openai_api_key     = var.openai_api_key
-    telegram_bot_token = var.telegram_bot_token
-    secret_key         = var.secret_key
+    openai_api_key         = var.openai_api_key
+    telegram_bot_token     = var.telegram_bot_token
+    clerk_domain           = var.clerk_domain
+    clerk_secret_key       = var.clerk_secret_key
+    clerk_publishable_key  = var.clerk_publishable_key
   })
 }
 
@@ -109,7 +111,9 @@ resource "aws_lambda_function" "api" {
       DATABASE_URL          = "postgresql://${var.db_username}:${var.db_password}@${aws_db_instance.main.endpoint}/${aws_db_instance.main.db_name}"
       AWS_REGION            = var.aws_region
       S3_BUCKET_IMAGES      = aws_s3_bucket.product_images.bucket
-      SECRET_KEY            = var.secret_key
+      CLERK_DOMAIN          = var.clerk_domain
+      CLERK_SECRET_KEY      = var.clerk_secret_key
+      CLERK_PUBLISHABLE_KEY = var.clerk_publishable_key
       OPENAI_API_KEY        = var.openai_api_key
       TELEGRAM_BOT_TOKEN    = var.telegram_bot_token
       TELEGRAM_WEBHOOK_URL  = "${aws_apigatewayv2_api.main.api_endpoint}/api/telegram/webhook"

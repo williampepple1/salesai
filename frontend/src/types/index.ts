@@ -1,5 +1,6 @@
 export interface User {
   id: number;
+  clerk_user_id: string;
   email: string;
   username: string;
   full_name?: string;
@@ -62,20 +63,3 @@ export interface Order {
   created_at: string;
 }
 
-export interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-export interface RegisterData {
-  email: string;
-  username: string;
-  password: string;
-  full_name?: string;
-  business_name?: string;
-}
-
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-}

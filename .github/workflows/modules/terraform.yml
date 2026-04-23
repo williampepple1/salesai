@@ -1,16 +1,14 @@
 name: Terraform Infrastructure
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'terraform/**'
-      - '.github/workflows/terraform.yml'
-  pull_request:
-    paths:
-      - 'terraform/**'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: false
+        default: 'production'
+        type: string
 
 env:
   AWS_REGION: us-east-1
@@ -24,6 +22,9 @@ jobs:
     defaults:
       run:
         working-directory: terraform
+    
+    outputs:
+      api_url: ${{ steps.output.outputs.api_url }}
     
     steps:
       - name: Checkout code
@@ -40,6 +41,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
       
       - name: Terraform Format Check
         run: terraform fmt -check
@@ -56,14 +58,22 @@ jobs:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TF_VAR_secret_key: ${{ secrets.SECRET_KEY }}
+          TF_VAR_clerk_domain: ${{ secrets.CLERK_DOMAIN }}
+          TF_VAR_clerk_secret_key: ${{ secrets.CLERK_SECRET_KEY }}
+          TF_VAR_clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
         run: terraform plan -out=tfplan
       
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
           TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           TF_VAR_telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TF_VAR_secret_key: ${{ secrets.SECRET_KEY }}
+          TF_VAR_clerk_domain: ${{ secrets.CLERK_DOMAIN }}
+          TF_VAR_clerk_secret_key: ${{ secrets.CLERK_SECRET_KEY }}
+          TF_VAR_clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
         run: terraform apply -auto-approve tfplan
+      
+      - name: Get Outputs
+        id: output
+        run: |
+          echo "api_url=$(terraform output -raw api_gateway_url)" >> $GITHUB_OUTPUT

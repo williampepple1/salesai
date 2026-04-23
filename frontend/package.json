@@ -14,12 +14,12 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.1",
     "axios": "^1.6.5",
-    "zustand": "^4.4.7",
     "@tanstack/react-query": "^5.17.9",
     "react-hook-form": "^7.49.3",
     "lucide-react": "^0.309.0",
     "clsx": "^2.1.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "@clerk/clerk-react": "^4.30.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",
