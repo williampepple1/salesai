@@ -14,6 +14,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>(product?.image_urls || []);
+  const [saveError, setSaveError] = useState('');
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: product || {
@@ -35,6 +36,11 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       onClose();
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      setSaveError(typeof detail === 'string' ? detail : 'Failed to save product');
+      console.error('Error saving product:', error);
     },
   });
   
@@ -60,11 +66,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   };
   
   const onSubmit = (data: any) => {
+    setSaveError('');
+    const price = Number.parseFloat(data.price);
+    const stockQuantity = Number.parseInt(data.stock_quantity, 10);
+
     mutation.mutate({
       ...data,
       image_urls: imageUrls,
-      price: parseFloat(data.price),
-      stock_quantity: parseInt(data.stock_quantity),
+      price: Number.isFinite(price) ? price : 0,
+      stock_quantity: Number.isFinite(stockQuantity) ? stockQuantity : 0,
+      is_available: Boolean(data.is_available),
     });
   };
   
@@ -81,6 +92,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+          {saveError && (
+            <div className="p-4 bg-red-50 text-red-800 rounded-lg">
+              {saveError}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Product Name *

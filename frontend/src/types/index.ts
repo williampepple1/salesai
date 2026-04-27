@@ -5,6 +5,9 @@ export interface User {
   username: string;
   full_name?: string;
   business_name?: string;
+  bank_name?: string;
+  account_name?: string;
+  account_number?: string;
   telegram_bot_username?: string;
   is_active: boolean;
   created_at: string;
@@ -59,6 +62,9 @@ export interface Order {
   total_amount: number;
   currency: string;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  invoice_url?: string;
+  receipt_url?: string;
+  payment_status?: 'awaiting_payment' | 'receipt_submitted' | 'verified';
   notes?: string;
   created_at: string;
 }

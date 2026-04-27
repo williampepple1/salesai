@@ -10,9 +10,6 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 let getTokenFunction: (() => Promise<string | null>) | null = null;
@@ -24,6 +21,13 @@ export const setTokenGetter = (fn: () => Promise<string | null>) => {
 
 // Request interceptor to add Clerk auth token
 api.interceptors.request.use(async (config) => {
+  if (config.data instanceof FormData) {
+    // Let the browser set multipart/form-data with the required boundary.
+    delete config.headers['Content-Type'];
+  } else {
+    config.headers['Content-Type'] = 'application/json';
+  }
+
   if (getTokenFunction) {
     try {
       const token = await getTokenFunction();
@@ -161,16 +165,12 @@ export const uploads = {
   },
   
   uploadFile: async (file: File): Promise<string> => {
-    const { presigned_url, public_url } = await uploads.getPresignedUrl(
-      file.name,
-      file.type
-    );
-    
-    await axios.put(presigned_url, file, {
-      headers: { 'Content-Type': file.type },
-    });
-    
-    return public_url;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data } = await api.post<{ public_url: string }>('/uploads/local', formData);
+
+    return data.public_url;
   },
 };
 

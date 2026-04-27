@@ -10,6 +10,9 @@ class UserResponse(BaseModel):
     username: str
     full_name: Optional[str]
     business_name: Optional[str]
+    bank_name: Optional[str] = None
+    account_name: Optional[str] = None
+    account_number: Optional[str] = None
     telegram_bot_username: Optional[str]
     is_active: bool
     created_at: datetime
@@ -21,6 +24,9 @@ class UserResponse(BaseModel):
 class UserUpdateRequest(BaseModel):
     full_name: Optional[str] = None
     business_name: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_name: Optional[str] = None
+    account_number: Optional[str] = None
 
 
 class TokenData(BaseModel):

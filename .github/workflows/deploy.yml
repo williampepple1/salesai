@@ -376,7 +376,7 @@ jobs:
         run: |
           echo "🎉 All deployments completed successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Your AI Sales Helper is now live and ready to use!" >> $GITHUB_STEP_SUMMARY
+          echo "Your Salesai is now live and ready to use!" >> $GITHUB_STEP_SUMMARY
       
       - name: Notify on partial failure
         if: |

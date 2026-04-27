@@ -19,6 +19,9 @@ class Order(Base):
     total_amount = Column(Float, nullable=False)
     currency = Column(String, default="USD")
     status = Column(String, default="pending")  # pending, confirmed, shipped, delivered, cancelled
+    invoice_url = Column(String, nullable=True)
+    receipt_url = Column(String, nullable=True)
+    payment_status = Column(String, default="awaiting_payment")  # awaiting_payment, receipt_submitted, verified
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

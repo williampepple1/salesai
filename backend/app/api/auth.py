@@ -31,6 +31,12 @@ def update_current_user(
         current_user.full_name = user_data.full_name
     if user_data.business_name is not None:
         current_user.business_name = user_data.business_name
+    if user_data.bank_name is not None:
+        current_user.bank_name = user_data.bank_name
+    if user_data.account_name is not None:
+        current_user.account_name = user_data.account_name
+    if user_data.account_number is not None:
+        current_user.account_number = user_data.account_number
     
     db.commit()
     db.refresh(current_user)

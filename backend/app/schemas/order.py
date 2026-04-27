@@ -32,6 +32,9 @@ class OrderResponse(BaseModel):
     total_amount: float
     currency: str
     status: str
+    invoice_url: Optional[str] = None
+    receipt_url: Optional[str] = None
+    payment_status: Optional[str] = None
     notes: Optional[str]
     created_at: datetime
     

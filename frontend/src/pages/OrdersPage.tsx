@@ -182,6 +182,52 @@ export default function OrdersPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Invoice and Payment Receipt */}
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">Invoice & Payment</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500">Payment Status</p>
+                          <p className="font-medium text-gray-900">
+                            {order.payment_status || 'awaiting_payment'}
+                          </p>
+                        </div>
+                        {order.invoice_url && (
+                          <div>
+                            <p className="text-gray-500">Invoice</p>
+                            <a
+                              href={order.invoice_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary-600 hover:underline"
+                            >
+                              View invoice image
+                            </a>
+                          </div>
+                        )}
+                        {order.receipt_url && (
+                          <div>
+                            <p className="text-gray-500">Customer Receipt</p>
+                            <a
+                              href={order.receipt_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary-600 hover:underline"
+                            >
+                              View receipt image
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                      {order.receipt_url && (
+                        <img
+                          src={order.receipt_url}
+                          alt="Customer payment receipt"
+                          className="mt-4 max-h-64 rounded-lg border border-gray-200"
+                        />
+                      )}
+                    </div>
                     
                     {/* Update Status */}
                     <div>

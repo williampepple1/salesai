@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-This directory contains the CI/CD workflows for the AI Sales Helper platform.
+This directory contains the CI/CD workflows for the Salesai platform.
 
 ## Workflow Architecture
 

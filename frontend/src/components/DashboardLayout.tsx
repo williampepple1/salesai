@@ -35,7 +35,7 @@ export default function DashboardLayout() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-primary-600">AI Sales Helper</h1>
+            <h1 className="text-xl font-bold text-primary-600">Salesai</h1>
           </div>
           
           {/* User info */}

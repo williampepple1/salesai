@@ -1,4 +1,4 @@
-# AI Sales Helper - Project Overview
+# Salesai - Project Overview
 
 ## What Is This?
 

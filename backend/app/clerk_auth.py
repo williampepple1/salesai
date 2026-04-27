@@ -92,10 +92,17 @@ async def get_current_user(
     # Verify token with Clerk
     payload = clerk_auth.verify_token(token)
     
-    # Extract user information from Clerk payload
+    # Extract user information from Clerk payload. Clerk session JWTs can vary
+    # by template, so keep local/demo mode tolerant of missing email claims.
     clerk_user_id = payload.get("sub")
-    email = payload.get("email")
-    username = payload.get("username") or email.split("@")[0]
+    email = (
+        payload.get("email")
+        or payload.get("email_address")
+        or payload.get("primary_email_address")
+        or payload.get("emailAddress")
+        or (f"{clerk_user_id}@demo.local" if clerk_user_id else None)
+    )
+    username = payload.get("username") or (email.split("@")[0] if email else clerk_user_id)
     
     if not clerk_user_id:
         raise HTTPException(

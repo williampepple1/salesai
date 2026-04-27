@@ -1,4 +1,4 @@
-# AI Sales Helper
+# Salesai
 
 A complete AI-powered sales assistant platform that enables sellers to manage products through a dashboard and automatically handle customer conversations via Telegram when offline. The AI agent can show products, calculate discounts, and process orders autonomously.
 
