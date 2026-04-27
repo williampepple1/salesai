@@ -1,0 +1,162 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                        AI SALES HELPER ARCHITECTURE                        ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│                              USERS / CLIENTS                              │
+├────────────────────────────────┬──────────────────────────────────────────┤
+│                                │                                          │
+│  👤 Seller (Dashboard)         │    📱 Customer (Telegram)                │
+│  • Product Management          │    • Browse Products                     │
+│  • Discount Configuration      │    • Place Orders                        │
+│  • Order Tracking             │    • AI Chat                             │
+│                                │                                          │
+└────────────┬───────────────────┴──────────────────┬───────────────────────┘
+             │                                      │
+             │ HTTPS                                │ Webhook
+             │                                      │
+┌────────────▼──────────────────────────────────────▼───────────────────────┐
+│                           AWS CLOUDFRONT (CDN)                             │
+│  • Global Content Delivery                                                │
+│  • HTTPS/SSL Certificates                                                 │
+│  • Cache Static Assets                                                    │
+└────────────┬──────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        AWS API GATEWAY (HTTP API)                          │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │  • Route Requests                    • CORS Configuration            │ │
+│  │  • JWT Authentication (Clerk)        • Rate Limiting                 │ │
+│  │  • Request/Response Transformation   • API Throttling                │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+└────────────┬───────────────────────────────────────────────────────────────┘
+             │
+             ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         AWS LAMBDA (SERVERLESS)                            │
+│  ╔══════════════════════════════════════════════════════════════════════╗ │
+│  ║                      FASTAPI APPLICATION                             ║ │
+│  ╠══════════════════════════════════════════════════════════════════════╣ │
+│  ║                                                                      ║ │
+│  ║  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐    ║ │
+│  ║  │  Product API    │  │  Discount API   │  │  Order API      │    ║ │
+│  ║  │                 │  │                 │  │                 │    ║ │
+│  ║  │ • CRUD Products │  │ • Create Rules  │  │ • Create Orders │    ║ │
+│  ║  │ • Upload Images │  │ • Calculate     │  │ • Track Status  │    ║ │
+│  ║  │ • Search        │  │ • Apply Best    │  │ • List Orders   │    ║ │
+│  ║  └─────────────────┘  └─────────────────┘  └─────────────────┘    ║ │
+│  ║                                                                      ║ │
+│  ║  ┌─────────────────┐  ┌─────────────────────────────────────────┐  ║ │
+│  ║  │  Telegram Bot   │  │        AI Agent (GPT-4)                 │  ║ │
+│  ║  │  Handler        │  │                                         │  ║ │
+│  ║  │                 │  │  • Natural Language Processing          │  ║ │
+│  ║  │ • Webhook       │◄─┤  • Product Recommendations              │  ║ │
+│  ║  │ • Message Route │  │  • Discount Calculation                 │  ║ │
+│  ║  │ • Send Messages │  │  • Order Processing                     │  ║ │
+│  ║  │                 │  │  • Function Calling                     │  ║ │
+│  ║  └─────────────────┘  └─────────────────────────────────────────┘  ║ │
+│  ║                                                                      ║ │
+│  ║  ┌──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │              Business Logic Layer                            │  ║ │
+│  ║  │  • SQLAlchemy ORM  • Pydantic Validation  • Error Handling  │  ║ │
+│  ║  └──────────────────────────────────────────────────────────────┘  ║ │
+│  ╚══════════════════════════════════════════════════════════════════════╝ │
+└────────────┬───────────────────────┬────────────────────┬─────────────────┘
+             │                       │                    │
+   ┌─────────▼────────┐   ┌─────────▼─────────┐   ┌─────▼──────────┐
+   │                  │   │                   │   │                │
+   │  AWS VPC         │   │                   │   │                │
+   │  ┌────────────┐  │   │                   │   │                │
+   │  │            │  │   │                   │   │                │
+┌──▼──▼────────────▼──▼───▼───────────────────▼───▼────────────────▼───────┐
+│                          DATA & STORAGE LAYER                             │
+├───────────────────────┬──────────────────────────┬────────────────────────┤
+│                       │                          │                        │
+│  ┌─────────────────┐  │  ┌────────────────────┐  │  ┌──────────────────┐ │
+│  │  AWS RDS        │  │  │  AWS S3            │  │  │  AWS Secrets     │ │
+│  │  PostgreSQL     │  │  │                    │  │  │  Manager         │ │
+│  │                 │  │  │  ┌──────────────┐  │  │  │                  │ │
+│  │ • Users         │  │  │  │ Product      │  │  │  │ • DB Password    │ │
+│  │ • Products      │  │  │  │ Images       │  │  │  │ • API Keys       │ │
+│  │ • Discounts     │  │  │  └──────────────┘  │  │  │ • Tokens         │ │
+│  │ • Orders        │  │  │                    │  │  │                  │ │
+│  │ • Messages      │  │  │  ┌──────────────┐  │  │  └──────────────────┘ │
+│  │                 │  │  │  │ Frontend     │  │  │                        │
+│  │ Private Subnet  │  │  │  │ Assets       │  │  │                        │
+│  │ Multi-AZ Ready  │  │  │  └──────────────┘  │  │                        │
+│  │ Encrypted       │  │  │                    │  │                        │
+│  └─────────────────┘  │  └────────────────────┘  │                        │
+│                       │                          │                        │
+└───────────────────────┴──────────────────────────┴────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│                         EXTERNAL SERVICES                                 │
+├─────────────────────┬───────────────────────┬─────────────────────────────┤
+│                     │                       │                             │
+│  ┌───────────────┐  │  ┌─────────────────┐  │  ┌────────────────────┐    │
+│  │  Telegram     │  │  │  OpenAI         │  │  │  Clerk             │    │
+│  │  Bot API      │  │  │  GPT-4 API      │  │  │  Authentication    │    │
+│  │               │  │  │                 │  │  │                    │    │
+│  │ • Webhook     │  │  │ • Chat API      │  │  │ • JWT Tokens       │    │
+│  │ • Send Msg    │  │  │ • Function Call │  │  │ • User Management  │    │
+│  │ • Media       │  │  │ • Embeddings    │  │  │ • Social Login     │    │
+│  └───────────────┘  │  └─────────────────┘  │  └────────────────────┘    │
+│                     │                       │                             │
+└─────────────────────┴───────────────────────┴─────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│                      DEPLOYMENT & MONITORING                              │
+├─────────────────────────────────────────────────────────────────────────  │
+│                                                                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │  Terraform   │  │  GitHub      │  │  CloudWatch  │  │  GuardDuty  │  │
+│  │  (IaC)       │  │  Actions     │  │  (Logs)      │  │  (Security) │  │
+│  │              │  │  (CI/CD)     │  │              │  │             │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘  │
+│                                                                           │
+└───────────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                            DATA FLOW                                      ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  1. User Request  →  CloudFront  →  API Gateway                          ║
+║  2. API Gateway  →  JWT Validation (Clerk)                               ║
+║  3. Lambda Invocation  →  FastAPI Application                            ║
+║  4. Business Logic  →  Database Query (RDS)                              ║
+║  5. Response  ←  Lambda  ←  API Gateway  ←  CloudFront  ←  User          ║
+║                                                                           ║
+║  Telegram Flow:                                                           ║
+║  1. User Message  →  Telegram  →  Webhook  →  API Gateway  →  Lambda     ║
+║  2. Lambda  →  AI Agent (GPT-4)  →  Function Calling                     ║
+║  3. Function  →  Database Operation  →  Response                         ║
+║  4. Response  →  Telegram API  →  User Message                           ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         SECURITY LAYERS                                   ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  Layer 1: Network (VPC, Security Groups, NACLs)                          ║
+║  Layer 2: Application (JWT, Input Validation, Rate Limiting)             ║
+║  Layer 3: Data (Encryption at Rest, Encryption in Transit)               ║
+║  Layer 4: Identity (Clerk Auth, IAM Roles, Least Privilege)              ║
+║  Layer 5: Monitoring (CloudWatch, GuardDuty, CloudTrail)                 ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                     KEY ARCHITECTURAL BENEFITS                            ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  ✓ Serverless = No Server Management, Auto-Scaling, Pay-per-Use          ║
+║  ✓ Multi-AZ = High Availability, Fault Tolerance                         ║
+║  ✓ CloudFront CDN = Global Reach, Fast Load Times                        ║
+║  ✓ VPC Isolation = Enhanced Security, Network Control                    ║
+║  ✓ Managed Services = Reduced Operational Overhead                       ║
+║  ✓ Infrastructure as Code = Reproducible, Version Controlled             ║
+║  ✓ CI/CD Pipeline = Automated Deployments, Fast Iterations               ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
