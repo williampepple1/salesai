@@ -48,5 +48,14 @@ lambda-package/
 *.log
 logs/
 
+# Local demo/runtime data
+*.db
+*.sqlite
+*.sqlite3
+backend/static/uploads/
+backend/static/invoices/
+backend/static/receipts/
+test-upload.png
+
 # OS
 Thumbs.db
