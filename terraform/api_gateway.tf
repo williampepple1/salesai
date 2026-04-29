@@ -1,10 +1,16 @@
+locals {
+  effective_cors_allowed_origins = length(var.cors_allowed_origins) > 0 ? var.cors_allowed_origins : [
+    "https://${aws_cloudfront_distribution.frontend.domain_name}"
+  ]
+}
+
 # HTTP API Gateway
 resource "aws_apigatewayv2_api" "main" {
   name          = "${var.project_name}-api"
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = var.cors_allowed_origins
+    allow_origins = local.effective_cors_allowed_origins
     allow_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     allow_headers = ["authorization", "content-type", "x-request-id"]
     max_age       = 300

@@ -11,7 +11,11 @@ from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault("DATABASE_URL", os.getenv("TEST_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/salesai_test"))
+test_database_url = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://postgres:postgres@localhost:5432/salesai_test",
+)
+os.environ["DATABASE_URL"] = test_database_url
 os.environ.setdefault("AWS_REGION", "us-east-1")
 os.environ.setdefault("S3_BUCKET_IMAGES", "test-images")
 os.environ.setdefault("CLERK_DOMAIN", "test.clerk.accounts.dev")
@@ -25,9 +29,15 @@ from app.database import Base, get_db
 from app.models import User
 from app.clerk_auth import get_current_active_user
 
-SQLALCHEMY_DATABASE_URL = os.environ["DATABASE_URL"]
+SQLALCHEMY_DATABASE_URL = test_database_url
 if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
     pytest.exit("SQLite is not supported. Set TEST_DATABASE_URL to a PostgreSQL database.")
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg://",
+        1,
+    )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

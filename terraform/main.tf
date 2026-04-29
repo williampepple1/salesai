@@ -6,13 +6,17 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 
   backend "s3" {
-    bucket         = "salesai-terraform-state"
-    key            = "state/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "salesai-terraform-locks"
+    bucket = "salesai-terraform-state"
+    key    = "state/terraform.tfstate"
+    region = "us-east-1"
+    # Optional: add dynamodb_table after creating the lock table.
   }
 }
 

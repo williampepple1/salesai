@@ -26,6 +26,7 @@ db_allocated_storage  = 20
 db_multi_az           = true
 
 # Production CORS and observability
-cors_allowed_origins          = ["https://your-frontend-domain.com"]
+# Leave cors_allowed_origins empty to use the Terraform-managed CloudFront domain.
+cors_allowed_origins          = []
 cloudwatch_log_retention_days = 90
 enable_xray_tracing           = true

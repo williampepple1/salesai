@@ -87,9 +87,9 @@ variable "db_multi_az" {
 }
 
 variable "cors_allowed_origins" {
-  description = "Allowed browser origins for API Gateway and FastAPI CORS"
+  description = "Allowed browser origins for API Gateway and FastAPI CORS. Leave empty to allow the Terraform-managed CloudFront frontend."
   type        = list(string)
-  default     = ["http://localhost:5173"]
+  default     = []
 }
 
 variable "cloudwatch_log_retention_days" {

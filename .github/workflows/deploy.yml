@@ -169,7 +169,7 @@ jobs:
       - name: Run tests
         working-directory: backend
         env:
-          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/salesai_test
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/salesai_test
         run: |
           pytest tests/ -v
       
@@ -185,6 +185,7 @@ jobs:
           pip install -r requirements.txt \
             -t lambda-package/ \
             --platform manylinux2014_x86_64 \
+            --python-version 3.11 \
             --only-binary=:all: \
             --upgrade
           

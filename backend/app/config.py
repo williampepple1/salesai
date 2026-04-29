@@ -72,10 +72,12 @@ class Settings(BaseSettings):
         if database_url.startswith("sqlite"):
             raise RuntimeError("SQLite is not supported for this production app.")
 
-        if not database_url.startswith(("postgresql://", "postgresql+psycopg2://")):
+        if not database_url.startswith(
+            ("postgresql://", "postgresql+psycopg://", "postgresql+psycopg2://")
+        ):
             raise RuntimeError("DATABASE_URL must use PostgreSQL.")
 
-        return database_url
+        return _normalize_postgres_driver(database_url)
 
 
 settings = Settings()
@@ -97,7 +99,7 @@ def _load_database_url_from_secret(secret_arn: str, region_name: str) -> str:
         raise RuntimeError(f"Database secret is missing required keys: {missing}")
 
     url = URL.create(
-        "postgresql+psycopg2",
+        "postgresql+psycopg",
         username=payload["username"],
         password=payload["password"],
         host=payload["host"],
@@ -109,7 +111,13 @@ def _load_database_url_from_secret(secret_arn: str, region_name: str) -> str:
 
 def _require_postgres_url(database_url: Any) -> str:
     if not isinstance(database_url, str) or not database_url.startswith(
-        ("postgresql://", "postgresql+psycopg2://")
+        ("postgresql://", "postgresql+psycopg://", "postgresql+psycopg2://")
     ):
         raise RuntimeError("Database secret must contain a PostgreSQL URL.")
+    return _normalize_postgres_driver(database_url)
+
+
+def _normalize_postgres_driver(database_url: str) -> str:
+    if database_url.startswith("postgresql://"):
+        return database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     return database_url

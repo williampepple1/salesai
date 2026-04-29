@@ -97,9 +97,26 @@ resource "aws_secretsmanager_secret_version" "app_secrets" {
   })
 }
 
+data "archive_file" "lambda_bootstrap" {
+  type        = "zip"
+  output_path = "${path.module}/.terraform/lambda-bootstrap.zip"
+
+  source {
+    filename = "lambda_handler.py"
+    content  = <<-PY
+def handler(event, context):
+    return {
+        "statusCode": 503,
+        "headers": {"content-type": "application/json"},
+        "body": "{\"detail\":\"Backend package has not been deployed yet\"}"
+    }
+PY
+  }
+}
+
 # Lambda function
 resource "aws_lambda_function" "api" {
-  filename      = "${path.module}/../backend/lambda-package.zip"
+  filename      = data.archive_file.lambda_bootstrap.output_path
   function_name = "${var.project_name}-api"
   role          = aws_iam_role.lambda.arn
   handler       = "lambda_handler.handler"
@@ -107,7 +124,7 @@ resource "aws_lambda_function" "api" {
   timeout       = 30
   memory_size   = 512
 
-  source_code_hash = fileexists("${path.module}/../backend/lambda-package.zip") ? filebase64sha256("${path.module}/../backend/lambda-package.zip") : null
+  source_code_hash = data.archive_file.lambda_bootstrap.output_base64sha256
 
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
@@ -131,7 +148,7 @@ resource "aws_lambda_function" "api" {
       OPENAI_API_KEY         = var.openai_api_key
       TELEGRAM_BOT_TOKEN     = var.telegram_bot_token
       TELEGRAM_WEBHOOK_URL   = "${aws_apigatewayv2_api.main.api_endpoint}/api/telegram/webhook"
-      CORS_ORIGINS           = jsonencode(var.cors_allowed_origins)
+      CORS_ORIGINS           = jsonencode(local.effective_cors_allowed_origins)
     }
   }
 
@@ -140,6 +157,13 @@ resource "aws_lambda_function" "api" {
     aws_iam_role_policy_attachment.lambda_vpc,
     aws_iam_role_policy.lambda_custom
   ]
+
+  lifecycle {
+    ignore_changes = [
+      filename,
+      source_code_hash,
+    ]
+  }
 }
 
 # CloudWatch Log Group for Lambda
