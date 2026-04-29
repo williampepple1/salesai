@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
 import boto3
 from botocore.exceptions import ClientError
+import logging
 import uuid
 from pathlib import Path
 import shutil
@@ -11,6 +12,7 @@ from ..clerk_auth import get_current_active_user
 from ..config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _public_base_url(request: Request) -> str:
@@ -65,10 +67,11 @@ def get_presigned_url(
             "s3_key": unique_filename
         }
     
-    except ClientError as e:
+    except ClientError:
+        logger.exception("Failed to generate S3 presigned URL")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error generating presigned URL: {str(e)}"
+            detail="Unable to generate upload URL"
         )
 
 
@@ -76,6 +79,7 @@ def get_presigned_url(
 def upload_local_image(
     request: Request,
     file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Local/demo upload endpoint.
@@ -84,6 +88,12 @@ def upload_local_image(
     working without AWS credentials and returns a public ngrok URL when
     TELEGRAM_WEBHOOK_URL is configured.
     """
+    if not settings.ENABLE_LOCAL_UPLOADS:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Local uploads are disabled"
+        )
+
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,10 +101,8 @@ def upload_local_image(
         )
 
     try:
-        # Keep local demo uploads independent of auth/session issues. Products
-        # are still protected when saved, but images can be staged first.
         extension = Path(file.filename or "upload.jpg").suffix or ".jpg"
-        upload_dir = Path("static") / "uploads" / "demo"
+        upload_dir = Path("static") / "uploads" / str(current_user.id)
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         filename = f"{uuid.uuid4()}{extension}"
@@ -103,13 +111,14 @@ def upload_local_image(
         with destination.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        relative_url = f"/static/uploads/demo/{filename}"
+        relative_url = f"/static/uploads/{current_user.id}/{filename}"
         return {
             "public_url": f"{_public_base_url(request)}{relative_url}",
             "local_path": str(destination)
         }
-    except Exception as e:
+    except Exception:
+        logger.exception("Failed to store local upload")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error uploading image locally: {str(e)}"
+            detail="Unable to upload image"
         )

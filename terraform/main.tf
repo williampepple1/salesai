@@ -1,25 +1,24 @@
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
   }
-  
+
   backend "s3" {
-    bucket = "salesai-terraform-state"
-    key    = "state/terraform.tfstate"
-    region = "us-east-1"
-    # Uncomment and configure DynamoDB table for state locking
-    # dynamodb_table = "salesai-terraform-locks"
+    bucket         = "salesai-terraform-state"
+    key            = "state/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "salesai-terraform-locks"
   }
 }
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Project     = var.project_name
@@ -59,6 +58,12 @@ output "images_bucket" {
 output "rds_endpoint" {
   description = "RDS endpoint"
   value       = aws_db_instance.main.endpoint
+}
+
+output "database_secret_arn" {
+  description = "Secrets Manager ARN for database credentials"
+  value       = aws_secretsmanager_secret.db_credentials.arn
+  sensitive   = true
 }
 
 output "telegram_webhook_url" {

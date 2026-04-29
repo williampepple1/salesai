@@ -3,10 +3,10 @@ from app.services.discount_engine import DiscountEngine
 from app.models import Product, DiscountRule
 
 
-def test_no_discount(db):
+def test_no_discount(db, test_user):
     """Test product with no discount rules"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=100.00,
         stock_quantity=10
@@ -23,10 +23,10 @@ def test_no_discount(db):
     assert result["rule_name"] is None
 
 
-def test_percentage_discount(db):
+def test_percentage_discount(db, test_user):
     """Test percentage-based discount"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=100.00,
         stock_quantity=10
@@ -59,10 +59,10 @@ def test_percentage_discount(db):
     assert result["rule_name"] == "10% off"
 
 
-def test_fixed_discount(db):
+def test_fixed_discount(db, test_user):
     """Test fixed amount discount"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=50.00,
         stock_quantity=10
@@ -89,10 +89,10 @@ def test_fixed_discount(db):
     assert result["final_price"] == 230.00
 
 
-def test_buy_x_get_y_discount(db):
+def test_buy_x_get_y_discount(db, test_user):
     """Test buy X get Y free discount"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=10.00,
         stock_quantity=20
@@ -125,10 +125,10 @@ def test_buy_x_get_y_discount(db):
     assert result["effective_quantity"] == 6
 
 
-def test_multiple_discount_rules(db):
+def test_multiple_discount_rules(db, test_user):
     """Test selecting best discount from multiple rules"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=100.00,
         stock_quantity=20
@@ -164,10 +164,10 @@ def test_multiple_discount_rules(db):
     assert result["rule_name"] == "15% off"
 
 
-def test_inactive_discount(db):
+def test_inactive_discount(db, test_user):
     """Test that inactive discounts are not applied"""
     product = Product(
-        user_id=1,
+        user_id=test_user.id,
         name="Test Product",
         price=100.00,
         stock_quantity=10

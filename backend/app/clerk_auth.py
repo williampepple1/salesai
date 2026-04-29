@@ -1,14 +1,17 @@
 from typing import Optional
+import logging
 import jwt
 from jwt import PyJWKClient
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .config import settings
 from .database import get_db
 from .models import User
 
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
 
 
 class ClerkAuth:
@@ -54,15 +57,16 @@ class ClerkAuth:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired"
             )
-        except jwt.InvalidTokenError as e:
+        except jwt.InvalidTokenError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Invalid token: {str(e)}"
+                detail="Invalid token"
             )
-        except Exception as e:
+        except Exception:
+            logger.exception("Unexpected Clerk token verification error")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Authentication error: {str(e)}"
+                detail="Authentication error"
             )
 
 
@@ -122,7 +126,17 @@ async def get_current_user(
             is_active=True
         )
         db.add(user)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            user = db.query(User).filter(User.clerk_user_id == clerk_user_id).first()
+            if not user:
+                logger.exception("User creation failed after Clerk identity race")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Unable to create user account"
+                )
         db.refresh(user)
     
     if not user.is_active:
@@ -163,5 +177,6 @@ def get_user_id_from_token(token: str) -> Optional[str]:
     try:
         payload = clerk_auth.verify_token(token)
         return payload.get("sub")
-    except:
+    except Exception:
+        logger.exception("Unable to extract Clerk user ID from token")
         return None

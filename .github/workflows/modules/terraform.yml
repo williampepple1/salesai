@@ -13,6 +13,7 @@ on:
 env:
   AWS_REGION: us-east-1
   TF_VERSION: '1.6.0'
+  TF_VAR_environment: prod
 
 jobs:
   terraform:
@@ -61,7 +62,13 @@ jobs:
           TF_VAR_clerk_domain: ${{ secrets.CLERK_DOMAIN }}
           TF_VAR_clerk_secret_key: ${{ secrets.CLERK_SECRET_KEY }}
           TF_VAR_clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
-        run: terraform plan -out=tfplan
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+        run: |
+          CORS_ARGS=()
+          if [ -n "$CORS_ALLOWED_ORIGINS" ]; then
+            CORS_ARGS=(-var="cors_allowed_origins=$CORS_ALLOWED_ORIGINS")
+          fi
+          terraform plan -out=tfplan -var="environment=prod" "${CORS_ARGS[@]}"
       
       - name: Terraform Apply
         env:

@@ -48,9 +48,9 @@ class TelegramBotService:
             
             return {"status": "ok"}
         
-        except Exception as e:
-            logger.error(f"Error handling webhook: {e}")
-            return {"status": "error", "message": str(e)}
+        except Exception:
+            logger.exception("Error handling Telegram webhook")
+            return {"status": "error", "message": "Unable to process webhook"}
     
     async def _handle_message(
         self,
@@ -107,8 +107,8 @@ class TelegramBotService:
                 user.id,
                 db
             )
-        except Exception as e:
-            logger.error(f"AI agent failed, using catalog fallback: {e}")
+        except Exception:
+            logger.exception("AI agent failed, using catalog fallback")
             products = db.query(Product).filter(
                 Product.user_id == user.id,
                 Product.is_available == True

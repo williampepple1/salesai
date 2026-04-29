@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -7,6 +9,7 @@ from ..services.telegram_bot import TelegramBotService
 
 router = APIRouter()
 telegram_service = TelegramBotService()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/webhook")
@@ -19,10 +22,11 @@ async def telegram_webhook(request: Request, db: Session = Depends(get_db)):
         update_data = await request.json()
         result = await telegram_service.handle_webhook(update_data, db)
         return result
-    except Exception as e:
+    except Exception:
+        logger.exception("Telegram webhook failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail="Unable to process Telegram webhook"
         )
 
 

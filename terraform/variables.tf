@@ -8,6 +8,11 @@ variable "environment" {
   description = "Environment (dev, staging, prod)"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod."
+  }
 }
 
 variable "aws_region" {
@@ -73,4 +78,28 @@ variable "db_allocated_storage" {
   description = "RDS allocated storage in GB"
   type        = number
   default     = 20
+}
+
+variable "db_multi_az" {
+  description = "Enable Multi-AZ for RDS. Production forces this on."
+  type        = bool
+  default     = false
+}
+
+variable "cors_allowed_origins" {
+  description = "Allowed browser origins for API Gateway and FastAPI CORS"
+  type        = list(string)
+  default     = ["http://localhost:5173"]
+}
+
+variable "cloudwatch_log_retention_days" {
+  description = "CloudWatch log retention for Lambda and API Gateway"
+  type        = number
+  default     = 30
+}
+
+variable "enable_xray_tracing" {
+  description = "Enable AWS X-Ray tracing for Lambda"
+  type        = bool
+  default     = true
 }

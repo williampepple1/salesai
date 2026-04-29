@@ -15,6 +15,7 @@ def test_products(db):
     """Create test products"""
     user = User(
         id=1,
+        clerk_user_id="user_ai",
         email="test@example.com",
         username="testuser",
         business_name="Test Store"
@@ -183,16 +184,6 @@ async def test_off_topic_response_gets_replaced(mock_openai_class, ai_agent, db,
     mock_response.choices = [Mock(message=mock_message)]
     
     mock_client.chat.completions.create.return_value = mock_response
-    
-    # Create test data
-    user = User(
-        id=1,
-        email="test@example.com",
-        username="testuser",
-        business_name="Test Store",
-        hashed_password="hashed"
-    )
-    db.add(user)
     
     from app.models import Conversation
     conversation = Conversation(

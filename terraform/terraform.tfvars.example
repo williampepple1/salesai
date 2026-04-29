@@ -1,7 +1,7 @@
 # Copy this file to terraform.tfvars and fill in your values
 
 project_name = "salesai"
-environment  = "dev"
+environment  = "prod"
 aws_region   = "us-east-1"
 
 # Database
@@ -21,5 +21,11 @@ clerk_publishable_key  = "pk_test_your-clerk-publishable-key"
 frontend_domain = ""
 
 # Optional: Adjust database instance size
-db_instance_class     = "db.t3.micro"
+db_instance_class     = "db.t3.small"
 db_allocated_storage  = 20
+db_multi_az           = true
+
+# Production CORS and observability
+cors_allowed_origins          = ["https://your-frontend-domain.com"]
+cloudwatch_log_retention_days = 90
+enable_xray_tracing           = true

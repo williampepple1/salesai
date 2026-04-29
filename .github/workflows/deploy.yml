@@ -24,6 +24,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
+  TF_VAR_environment: prod
 
 jobs:
   # Job 1: Infrastructure (Terraform) - Must run first
@@ -73,14 +74,21 @@ jobs:
           TF_VAR_clerk_domain: ${{ secrets.CLERK_DOMAIN }}
           TF_VAR_clerk_secret_key: ${{ secrets.CLERK_SECRET_KEY }}
           TF_VAR_clerk_publishable_key: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
         run: |
+          CORS_ARGS=()
+          if [ -n "$CORS_ALLOWED_ORIGINS" ]; then
+            CORS_ARGS=(-var="cors_allowed_origins=$CORS_ALLOWED_ORIGINS")
+          fi
           terraform plan -out=tfplan \
+            -var="environment=prod" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="telegram_bot_token=${{ secrets.TELEGRAM_BOT_TOKEN }}" \
             -var="clerk_domain=${{ secrets.CLERK_DOMAIN }}" \
             -var="clerk_secret_key=${{ secrets.CLERK_SECRET_KEY }}" \
-            -var="clerk_publishable_key=${{ secrets.CLERK_PUBLISHABLE_KEY }}"
+            -var="clerk_publishable_key=${{ secrets.CLERK_PUBLISHABLE_KEY }}" \
+            "${CORS_ARGS[@]}"
       
       - name: Terraform Apply
         env:
@@ -116,6 +124,20 @@ jobs:
     name: 2. Deploy Backend
     runs-on: ubuntu-latest
     needs: infrastructure
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: salesai_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     if: |
       always() &&
       (needs.infrastructure.result == 'success' || needs.infrastructure.result == 'skipped') &&
@@ -146,8 +168,10 @@ jobs:
       
       - name: Run tests
         working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/salesai_test
         run: |
-          pytest tests/ -v || echo "Tests failed but continuing deployment"
+          pytest tests/ -v
       
       - name: Build Lambda package
         working-directory: backend
@@ -166,6 +190,8 @@ jobs:
           
           # Copy application code
           cp -r app lambda-package/
+          cp -r alembic lambda-package/
+          cp alembic.ini lambda-package/
           cp lambda_handler.py lambda-package/
           
           # Create zip file
@@ -180,9 +206,11 @@ jobs:
       - name: Upload Lambda package to S3
         working-directory: backend
         run: |
-          # Upload to S3 for Lambda to use
-          aws s3 cp lambda-package.zip s3://${{ secrets.S3_LAMBDA_BUCKET }}/lambda-package.zip || \
-          echo "S3 bucket not configured, skipping upload"
+          if [ -n "${{ secrets.S3_LAMBDA_BUCKET }}" ]; then
+            aws s3 cp lambda-package.zip s3://${{ secrets.S3_LAMBDA_BUCKET }}/lambda-package.zip
+          else
+            echo "S3_LAMBDA_BUCKET not configured, skipping optional artifact upload"
+          fi
       
       - name: Update Lambda function
         working-directory: backend
@@ -191,25 +219,49 @@ jobs:
           aws lambda update-function-code \
             --function-name salesai-api \
             --zip-file fileb://lambda-package.zip \
-            --region ${{ env.AWS_REGION }} || \
-          echo "Lambda function not found or update failed"
+            --region ${{ env.AWS_REGION }}
       
       - name: Wait for Lambda update
         run: |
           echo "Waiting for Lambda function to be updated..."
-          sleep 10
+          aws lambda wait function-updated \
+            --function-name salesai-api \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Run database migrations
+        run: |
+          FUNCTION_ERROR=$(aws lambda invoke \
+            --function-name salesai-api \
+            --payload '{"action":"run_migrations"}' \
+            --cli-binary-format raw-in-base64-out \
+            --region ${{ env.AWS_REGION }} \
+            --query 'FunctionError' \
+            --output text \
+            migration-response.json)
+          cat migration-response.json
+          if [ "$FUNCTION_ERROR" != "None" ]; then
+            echo "Migration Lambda failed: $FUNCTION_ERROR"
+            exit 1
+          fi
       
       - name: Test Lambda function
         run: |
           echo "Testing Lambda function..."
-          aws lambda invoke \
+          FUNCTION_ERROR=$(aws lambda invoke \
             --function-name salesai-api \
             --payload '{"httpMethod":"GET","path":"/health"}' \
+            --cli-binary-format raw-in-base64-out \
             --region ${{ env.AWS_REGION }} \
-            response.json || echo "Lambda test failed"
+            --query 'FunctionError' \
+            --output text \
+            response.json)
           
           if [ -f response.json ]; then
             cat response.json
+          fi
+          if [ "$FUNCTION_ERROR" != "None" ]; then
+            echo "Lambda health invoke failed: $FUNCTION_ERROR"
+            exit 1
           fi
       
       - name: Backend Deployment Summary
@@ -260,6 +312,7 @@ jobs:
         env:
           VITE_API_URL: ${{ secrets.API_URL }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
+          VITE_TELEGRAM_WEBHOOK_URL: ${{ secrets.API_URL }}/telegram/webhook
         run: |
           echo "Building frontend with API URL: ${{ secrets.API_URL }}"
           npm run build
@@ -359,13 +412,14 @@ jobs:
           # Check API health
           if [ -n "${{ secrets.API_URL }}" ]; then
             echo "Checking API health..."
-            curl -f "${{ secrets.API_URL }}/health" || echo "API health check failed"
+            curl -f "${{ secrets.API_URL }}/health"
+            curl -f "${{ secrets.API_URL }}/ready"
           fi
           
           # Check frontend
           if [ -n "${{ secrets.CLOUDFRONT_DOMAIN }}" ]; then
             echo "Checking frontend..."
-            curl -f "https://${{ secrets.CLOUDFRONT_DOMAIN }}" || echo "Frontend health check failed"
+            curl -f "https://${{ secrets.CLOUDFRONT_DOMAIN }}"
           fi
       
       - name: Notify on complete success
